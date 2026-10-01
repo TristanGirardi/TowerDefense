@@ -10,6 +10,7 @@ add_library(TowerDefense
     Critter.cpp
     CritterGroup.cpp
     CritterGroupGenerator.cpp
+    Tower.cpp
 )
 
 target_include_directories(TowerDefense PUBLIC
