@@ -28,3 +28,15 @@ Critter *critter = wave.spawnNext(map);
 critter->move(map);
 int reward = wave.attack(0, 100);
 ```
+
+## Running the driver
+
+Select the `TowerDefenseDriver` target in CLion and run it. It first runs the
+Map, Tower and Critter tests in the console, printing `[PASS]` or `[FAIL]` for
+each check and a summary at the end, and then opens the game window drawn
+with SFML 3. CMake downloads and builds SFML automatically the first time the
+project is configured, so an internet connection is needed once.
+
+Game controls: `1`/`2`/`3` choose Direct, Splash or Hunter tower; left-click
+grass to build; left-click a tower to upgrade it; right-click a tower to sell
+it; `Space` starts the next wave; `R` restarts after game over.

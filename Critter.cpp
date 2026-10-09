@@ -209,11 +209,6 @@ int Critter::claimReward()
     return reward;
 }
 
-int Critter::coinsStolenAtExit() const
-{
-    return exitReached ? strength : 0;
-}
-
 int Critter::claimCoinsStolenAtExit()
 {
     if (!exitReached || exitLossClaimed)

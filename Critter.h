@@ -58,8 +58,7 @@ public:
     // Returns the reward once, when this critter has been killed.
     int claimReward();
 
-    // Returns the amount of coins stolen when the exit is reached.
-    int coinsStolenAtExit() const;
+    // Returns the coins stolen once, when the exit is reached.
     int claimCoinsStolenAtExit();
 };
 

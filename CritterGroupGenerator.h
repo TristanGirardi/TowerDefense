@@ -20,10 +20,6 @@ public:
                           int baseReward = 2);
 
     CritterGroup generate(int waveLevel) const;
-    CritterGroup generateGroup(int waveLevel) const
-    {
-        return generate(waveLevel);
-    }
 };
 
 #endif
