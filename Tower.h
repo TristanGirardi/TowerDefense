@@ -25,8 +25,8 @@ public:
     virtual ~Tower() = default;
 
     int getBuyCost() const;
- 
-    //true if the tower is not at its maximum level.
+
+    // true if the tower is not at its maximum level.
     bool canUpgrade() const;
     int getUpgradeCost() const;   // -1 at max level
     bool upgrade();               // false at max level; the caller pays for it
@@ -43,19 +43,17 @@ public:
     const TowerStats& getStats() const; // stats for the current level
 
 protected:
-    ///true if the critter is alive and within range.
+    // true if the critter is alive and within range.
     bool isInRange(const Critter& critter) const;
- 
-    //The closest critter in range, or nullptr if none.
+
+    // The closest critter in range, or nullptr if none.
     Critter* selectTarget(const std::vector<Critter*>& critters) const;
 
     static float distance(float x1, float y1, float x2, float y2);
- 
-    
-     //What a shot does. Each tower type defines its own effect.
-     //  target  = The selected critter.
-     // critters = All critters (needed by area-of-effect towers).
-     
+
+    // What a shot does. Each tower type defines its own effect.
+    // target = the selected critter
+    // critters = all critters (needed by area-of-effect towers)
     virtual void applyEffect(Critter& target,
                              std::vector<Critter*>& critters) = 0;
 
@@ -90,9 +88,8 @@ protected:
 private:
     float splashRadius; // in cells, around the target
 };
- 
 
-//Hunter tower: deals bonus damage to high-level critters.
+// Hunter tower: deals bonus damage to high-level critters.
 class HunterTower : public Tower {
 public:
     HunterTower(float x, float y);
@@ -102,8 +99,8 @@ protected:
                      std::vector<Critter*>& critters) override;
 
 private:
-    int   bonusMinLevel;    ///< Critters at or above this level take bonus damage.
-    float bonusMultiplier;  ///< Damage multiplier against them (2.0 = double).
+    int   bonusMinLevel;    // Critters at or above this level take bonus damage.
+    float bonusMultiplier;  // Damage multiplier against them (2.0 = double).
 };
 
 #endif

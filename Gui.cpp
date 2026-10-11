@@ -22,27 +22,28 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstdio>
 #include <fstream>
+#include <iomanip>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <vector>
 
 namespace
 {
-constexpr int MapWidth = 16;
-constexpr int MapHeight = 10;
-constexpr float Cell = 56.0f;
-constexpr float HudHeight = 120.0f;
-constexpr unsigned WindowWidth = static_cast<unsigned>(MapWidth * Cell);
-constexpr unsigned WindowHeight = static_cast<unsigned>(MapHeight * Cell + HudHeight);
+constexpr int mapWidth = 16;
+constexpr int mapHeight = 10;
+constexpr float cellSize = 56.0f;
+constexpr float hudHeight = 120.0f;
+constexpr unsigned windowWidth = static_cast<unsigned>(mapWidth * cellSize);
+constexpr unsigned windowHeight = static_cast<unsigned>(mapHeight * cellSize + hudHeight);
 
-constexpr int StartingCoins = 300;
-constexpr int StartingLives = 10;
-constexpr float SpawnInterval = 0.8f;
-constexpr float ShotDuration = 0.08f;
-constexpr float MessageDuration = 2.5f;
+constexpr int startingCoins = 300;
+constexpr int startingLives = 10;
+constexpr float spawnInterval = 0.8f;
+constexpr float shotDuration = 0.08f;
+constexpr float messageDuration = 2.5f;
 
 // The tower the player currently has picked. Don't reorder these: clicking
 // a swatch turns its slot number (0, 1, 2) straight into one of these.
@@ -77,8 +78,8 @@ TowerLook lookFor(TowerKind kind)
 // Builds the right Tower subclass for whatever the player picked.
 std::unique_ptr<Tower> makeTower(TowerKind kind, int x, int y)
 {
-    const float fx = static_cast<float>(x);
-    const float fy = static_cast<float>(y);
+    float fx = static_cast<float>(x);
+    float fy = static_cast<float>(y);
     switch (kind)
     {
     case TowerKind::Direct:
@@ -95,15 +96,15 @@ std::unique_ptr<Tower> makeTower(TowerKind kind, int x, int y)
 // lines between them, which is easier than setting every tile by hand.
 Map buildMap()
 {
-    Map map(MapWidth, MapHeight);
+    Map map(mapWidth, mapHeight);
     const sf::Vector2i waypoints[] = {
         {0, 1}, {12, 1}, {12, 4}, {3, 4}, {3, 7}, {15, 7}};
-    const std::size_t count = sizeof(waypoints) / sizeof(waypoints[0]);
+    std::size_t count = sizeof(waypoints) / sizeof(waypoints[0]);
 
     for (std::size_t i = 1; i < count; ++i)
     {
         sf::Vector2i current = waypoints[i - 1];
-        const sf::Vector2i target = waypoints[i];
+        sf::Vector2i target = waypoints[i];
         while (true)
         {
             map.setTile(current.x, current.y, TileType::PATH);
@@ -126,11 +127,11 @@ Map buildMap()
 // middle of a cell in pixels.
 sf::Vector2f cellCenter(float x, float y)
 {
-    return {(x + 0.5f) * Cell, (y + 0.5f) * Cell};
+    return {(x + 0.5f) * cellSize, (y + 0.5f) * cellSize};
 }
 
-// Critters jump a whole cell at a time, which looked choppy, so we remember
-// where each one came from and slide it across.
+// Critters move a whole cell at a time, so to make them look smooth we
+// remember where each one came from and slide it across.
 struct CritterVisual
 {
     Position from{0, 0};
@@ -166,8 +167,8 @@ public:
         towers.clear();
         towerKinds.clear();
         shots.clear();
-        coins = StartingCoins;
-        lives = StartingLives;
+        coins = startingCoins;
+        lives = startingLives;
         waveLevel = 0;
         waveActive = false;
         gameOver = false;
@@ -203,7 +204,7 @@ public:
         {
             return;
         }
-        const int index = towerAt(x, y);
+        int index = towerAt(x, y);
         if (index >= 0)
         {
             Tower &tower = *towers[index];
@@ -248,12 +249,12 @@ public:
         {
             return;
         }
-        const int index = towerAt(x, y);
+        int index = towerAt(x, y);
         if (index < 0)
         {
             return;
         }
-        const int refund = towers[index]->getRefundValue();
+        int refund = towers[index]->getRefundValue();
         coins += refund;
         say(towers[index]->getName() + " sold for " + std::to_string(refund) + " coins.");
         towers.erase(towers.begin() + index);
@@ -289,10 +290,10 @@ public:
             visual.from = visual.to = spawned->getPosition();
             visual.progress = 1.0f;
             visual.maxHitPoints = spawned->getHitPoints();
-            spawnTimer = SpawnInterval;
+            spawnTimer = spawnInterval;
         }
 
-        const std::size_t spawnedCount = wave.getNextCritterIndex();
+        std::size_t spawnedCount = wave.getNextCritterIndex();
         std::vector<Critter *> active;
         for (std::size_t i = 0; i < spawnedCount; ++i)
         {
@@ -334,7 +335,7 @@ public:
                 {
                     shots.push_back({cellCenter(towers[t]->getX(), towers[t]->getY()),
                                      critterPixel(i), lookFor(towerKinds[t]).color,
-                                     ShotDuration});
+                                     shotDuration});
                 }
             }
         }
@@ -402,7 +403,7 @@ private:
     void say(const std::string &text)
     {
         message = text;
-        messageTime = MessageDuration;
+        messageTime = messageDuration;
     }
 
     // Finds which tower is sitting on this cell. -1 means there isn't one.
@@ -424,17 +425,17 @@ private:
     sf::Vector2f critterPixel(std::size_t index) const
     {
         const CritterVisual &visual = visuals[index];
-        const float t = visual.progress;
-        const float x = visual.from.x + (visual.to.x - visual.from.x) * t;
-        const float y = visual.from.y + (visual.to.y - visual.from.y) * t;
+        float t = visual.progress;
+        float x = visual.from.x + (visual.to.x - visual.from.x) * t;
+        float y = visual.from.y + (visual.to.y - visual.from.y) * t;
         return cellCenter(x, y);
     }
 
     // The see-through circle that shows how far a tower can reach.
     static void drawRangeCircle(sf::RenderWindow &window, float x, float y, float range)
     {
-        sf::CircleShape circle(range * Cell, 60);
-        circle.setOrigin({range * Cell, range * Cell});
+        sf::CircleShape circle(range * cellSize, 60);
+        circle.setOrigin({range * cellSize, range * cellSize});
         circle.setPosition(cellCenter(x, y));
         circle.setFillColor(sf::Color(255, 255, 255, 30));
         circle.setOutlineColor(sf::Color(255, 255, 255, 120));
@@ -446,11 +447,11 @@ private:
     // under the mouse.
     void drawMap(sf::RenderWindow &window, sf::Vector2i mouse) const
     {
-        sf::RectangleShape tile({Cell, Cell});
+        sf::RectangleShape tile({cellSize, cellSize});
         tile.setOutlineThickness(-1.0f);
-        for (int y = 0; y < MapHeight; ++y)
+        for (int y = 0; y < mapHeight; ++y)
         {
-            for (int x = 0; x < MapWidth; ++x)
+            for (int x = 0; x < mapWidth; ++x)
             {
                 sf::Color color;
                 switch (map.getTile(x, y))
@@ -470,27 +471,27 @@ private:
                 }
                 tile.setFillColor(color);
                 tile.setOutlineColor(sf::Color(0, 0, 0, 25));
-                tile.setPosition({x * Cell, y * Cell});
+                tile.setPosition({x * cellSize, y * cellSize});
                 window.draw(tile);
             }
         }
 
         // Hovering shows the range: of the tower that's there, or of the one
         // you'd build if the cell is empty.
-        const int mx = static_cast<int>(mouse.x / Cell);
-        const int my = static_cast<int>(mouse.y / Cell);
-        if (mouse.x < 0 || mouse.y < 0 || mx >= MapWidth || my >= MapHeight)
+        int mx = static_cast<int>(mouse.x / cellSize);
+        int my = static_cast<int>(mouse.y / cellSize);
+        if (mouse.x < 0 || mouse.y < 0 || mx >= mapWidth || my >= mapHeight)
         {
             return;
         }
-        sf::RectangleShape hover({Cell, Cell});
-        hover.setPosition({mx * Cell, my * Cell});
+        sf::RectangleShape hover({cellSize, cellSize});
+        hover.setPosition({mx * cellSize, my * cellSize});
         hover.setFillColor(sf::Color(255, 255, 255, 40));
         hover.setOutlineColor(sf::Color(255, 255, 255, 160));
         hover.setOutlineThickness(-2.0f);
         window.draw(hover);
 
-        const int index = towerAt(mx, my);
+        int index = towerAt(mx, my);
         if (index >= 0)
         {
             drawRangeCircle(window, static_cast<float>(mx), static_cast<float>(my),
@@ -509,10 +510,10 @@ private:
         for (std::size_t i = 0; i < towers.size(); ++i)
         {
             const Tower &tower = *towers[i];
-            const TowerLook look = lookFor(towerKinds[i]);
-            const sf::Vector2f center = cellCenter(tower.getX(), tower.getY());
+            TowerLook look = lookFor(towerKinds[i]);
+            sf::Vector2f center = cellCenter(tower.getX(), tower.getY());
 
-            const float radius = Cell * 0.36f;
+            float radius = cellSize * 0.36f;
             sf::CircleShape body(radius, look.points);
             body.setOrigin({radius, radius});
             body.setPosition({center.x, center.y - 4.0f});
@@ -522,14 +523,14 @@ private:
             window.draw(body);
 
             // Little yellow dots under the tower, one for each level.
-            const float pip = 3.5f;
-            const int levels = tower.getLevel();
-            const float startX = center.x - (levels - 1) * pip * 1.4f;
+            float pip = 3.5f;
+            int levels = tower.getLevel();
+            float startX = center.x - (levels - 1) * pip * 1.4f;
             for (int l = 0; l < levels; ++l)
             {
                 sf::CircleShape dot(pip);
                 dot.setOrigin({pip, pip});
-                dot.setPosition({startX + l * pip * 2.8f, center.y + Cell * 0.36f});
+                dot.setPosition({startX + l * pip * 2.8f, center.y + cellSize * 0.36f});
                 dot.setFillColor(sf::Color(255, 230, 90));
                 window.draw(dot);
             }
@@ -548,13 +549,13 @@ private:
             {
                 continue;
             }
-            const sf::Vector2f center = critterPixel(i);
+            sf::Vector2f center = critterPixel(i);
 
-            const float radius = Cell * 0.22f;
+            float radius = cellSize * 0.22f;
             sf::CircleShape body(radius);
             body.setOrigin({radius, radius});
             body.setPosition(center);
-            const int shade = std::max(60, 230 - critter.getLevel() * 18);
+            int shade = std::max(60, 230 - critter.getLevel() * 18);
             body.setFillColor(sf::Color(200, static_cast<std::uint8_t>(shade / 3),
                                         static_cast<std::uint8_t>(shade / 3)));
             body.setOutlineColor(sf::Color(40, 10, 10));
@@ -562,9 +563,9 @@ private:
             window.draw(body);
 
             // Health bar above the critter. It goes yellow under half HP.
-            const float barWidth = Cell * 0.6f;
-            const float fraction = static_cast<float>(critter.getHitPoints()) /
-                                   static_cast<float>(visuals[i].maxHitPoints);
+            float barWidth = cellSize * 0.6f;
+            float fraction = static_cast<float>(critter.getHitPoints()) /
+                             static_cast<float>(visuals[i].maxHitPoints);
             sf::RectangleShape back({barWidth, 5.0f});
             back.setPosition({center.x - barWidth / 2, center.y - radius - 10.0f});
             back.setFillColor(sf::Color(40, 40, 40));
@@ -583,8 +584,8 @@ private:
     {
         for (const Shot &shot : shots)
         {
-            const sf::Vector2f delta = shot.to - shot.from;
-            const float length = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+            sf::Vector2f delta = shot.to - shot.from;
+            float length = std::sqrt(delta.x * delta.x + delta.y * delta.y);
             sf::RectangleShape beam({length, 3.0f});
             beam.setOrigin({0.0f, 1.5f});
             beam.setPosition(shot.from);
@@ -598,8 +599,8 @@ private:
     // and on the right are the wave, coins, lives, controls and messages.
     void drawHud(sf::RenderWindow &window, const sf::Font *font) const
     {
-        const float top = MapHeight * Cell;
-        sf::RectangleShape panel({static_cast<float>(WindowWidth), HudHeight});
+        float top = mapHeight * cellSize;
+        sf::RectangleShape panel({static_cast<float>(windowWidth), hudHeight});
         panel.setPosition({0.0f, top});
         panel.setFillColor(sf::Color(30, 32, 40));
         window.draw(panel);
@@ -608,7 +609,7 @@ private:
         const TowerKind kinds[] = {TowerKind::Direct, TowerKind::Splash, TowerKind::Hunter};
         for (int k = 0; k < 3; ++k)
         {
-            const float x = 20.0f + k * 70.0f;
+            float x = 20.0f + k * 70.0f;
             sf::RectangleShape slot({56.0f, 56.0f});
             slot.setPosition({x, top + 12.0f});
             slot.setFillColor(sf::Color(50, 54, 66));
@@ -617,7 +618,7 @@ private:
                                                       : sf::Color(90, 90, 100));
             window.draw(slot);
 
-            const TowerLook look = lookFor(kinds[k]);
+            TowerLook look = lookFor(kinds[k]);
             sf::CircleShape icon(18.0f, look.points);
             icon.setOrigin({18.0f, 18.0f});
             icon.setPosition({x + 28.0f, top + 40.0f});
@@ -630,40 +631,48 @@ private:
             return;
         }
 
-        auto text = [&](const std::string &str, float x, float y, unsigned size, sf::Color color) {
-            sf::Text label(*font, str, size);
-            label.setFillColor(color);
-            label.setPosition({x, y});
-            window.draw(label);
-        };
-
         for (int k = 0; k < 3; ++k)
         {
-            text(std::to_string(k + 1), 24.0f + k * 70.0f, top + 13.0f, 14, sf::Color::White);
+            drawText(window, *font, std::to_string(k + 1), 24.0f + k * 70.0f, top + 13.0f,
+                     14, sf::Color::White);
         }
 
-        const std::unique_ptr<Tower> preview = makeTower(selected, 0, 0);
+        std::unique_ptr<Tower> preview = makeTower(selected, 0, 0);
         const TowerStats &stats = preview->getStats();
-        char summary[96];
-        std::snprintf(summary, sizeof(summary), "%s  cost %d  range %.1f  power %d",
-                      preview->getName().c_str(), preview->getBuyCost(), stats.range,
-                      stats.power);
-        text(summary, 20.0f, top + 80.0f, 14, sf::Color(220, 220, 230));
+        std::ostringstream summary;
+        summary << preview->getName() << "  cost " << preview->getBuyCost()
+                << "  range " << std::fixed << std::setprecision(1) << stats.range
+                << "  power " << stats.power;
+        drawText(window, *font, summary.str(), 20.0f, top + 80.0f, 14,
+                 sf::Color(220, 220, 230));
 
-        const float infoX = 380.0f;
-        text("Wave " + std::to_string(waveLevel) + "    Coins " + std::to_string(coins) +
-                 "    Lives " + std::to_string(lives),
-             infoX, top + 12.0f, 22, sf::Color(255, 230, 90));
-        text("Left-click grass: build    Left-click tower: upgrade",
-             infoX, top + 44.0f, 14, sf::Color(190, 190, 200));
-        text(std::string("Right-click tower: sell    ") +
-                 (waveActive ? "Wave in progress" : "Space: next wave"),
-             infoX, top + 62.0f, 14, sf::Color(190, 190, 200));
+        float infoX = 380.0f;
+        drawText(window, *font,
+                 "Wave " + std::to_string(waveLevel) + "    Coins " + std::to_string(coins) +
+                     "    Lives " + std::to_string(lives),
+                 infoX, top + 12.0f, 22, sf::Color(255, 230, 90));
+        drawText(window, *font, "Left-click grass: build    Left-click tower: upgrade",
+                 infoX, top + 44.0f, 14, sf::Color(190, 190, 200));
+        drawText(window, *font,
+                 std::string("Right-click tower: sell    ") +
+                     (waveActive ? "Wave in progress" : "Space: next wave"),
+                 infoX, top + 62.0f, 14, sf::Color(190, 190, 200));
         if (messageTime > 0.0f || gameOver)
         {
-            text(message, infoX, top + 88.0f, 16,
-                 gameOver ? sf::Color(255, 110, 110) : sf::Color::White);
+            drawText(window, *font, message, infoX, top + 88.0f, 16,
+                     gameOver ? sf::Color(255, 110, 110) : sf::Color::White);
         }
+    }
+
+    // Writes one line of text on the screen at (x, y).
+    static void drawText(sf::RenderWindow &window, const sf::Font &font,
+                         const std::string &str, float x, float y, unsigned size,
+                         sf::Color color)
+    {
+        sf::Text label(font, str, size);
+        label.setFillColor(color);
+        label.setPosition({x, y});
+        window.draw(label);
     }
 };
 
@@ -693,7 +702,7 @@ std::optional<sf::Font> loadFont()
 // we handle the keyboard and mouse, update the game, then redraw it.
 void runGui()
 {
-    sf::RenderWindow window(sf::VideoMode({WindowWidth, WindowHeight}), "Tower Defense",
+    sf::RenderWindow window(sf::VideoMode({windowWidth, windowHeight}), "Tower Defense",
                             sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(60);
 
@@ -738,18 +747,18 @@ void runGui()
             }
             else if (const auto *click = event->getIf<sf::Event::MouseButtonPressed>())
             {
-                const int x = static_cast<int>(click->position.x / Cell);
-                const int y = static_cast<int>(click->position.y / Cell);
-                if (click->position.y >= MapHeight * Cell)
+                int x = static_cast<int>(click->position.x / cellSize);
+                int y = static_cast<int>(click->position.y / cellSize);
+                if (click->position.y >= mapHeight * cellSize)
                 {
                     // Clicked the bottom panel, so check if it was on a swatch.
-                    const int slot = (click->position.x - 20) / 70;
+                    int slot = (click->position.x - 20) / 70;
                     if (click->position.x >= 20 && slot < 3)
                     {
                         game.select(static_cast<TowerKind>(slot));
                     }
                 }
-                else if (x >= 0 && x < MapWidth && y >= 0)
+                else if (x >= 0 && x < mapWidth && y >= 0)
                 {
                     if (click->button == sf::Mouse::Button::Left)
                     {
@@ -765,10 +774,10 @@ void runGui()
 
         // Dragging the window freezes the game for a moment, and without this
         // cap the critters would jump way ahead when it comes back.
-        const float dt = std::min(clock.restart().asSeconds(), 0.05f);
+        float dt = std::min(clock.restart().asSeconds(), 0.05f);
         game.update(dt);
 
-        const std::string newTitle = game.titleText();
+        std::string newTitle = game.titleText();
         if (newTitle != title)
         {
             title = newTitle;
