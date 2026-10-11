@@ -9,8 +9,10 @@
 
 namespace
 {
+// Right, left, down, up. Critters can't move diagonally.
 const Position directions[] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
+// Critters can stand on anything except scenery, and obviously not off the map.
 bool canEnter(const Map &map, const Position &position)
 {
     if (position.x < 0 || position.x >= map.getWidth() ||
@@ -104,6 +106,10 @@ void Critter::takeDamage(int damage)
     }
 }
 
+// BFS from the critter to the exit. BFS reaches the exit by a shortest route
+// first, and we remember where each cell was reached from so we can trace
+// back to the first step. It runs again every step, which is simple and
+// fast enough for maps this size.
 Position Critter::nextPosition(const Map &map) const
 {
     if (position.x == map.getExitX() && position.y == map.getExitY())
@@ -119,6 +125,7 @@ Position Critter::nextPosition(const Map &map) const
 
     std::vector<std::vector<bool>> visited(
         map.getHeight(), std::vector<bool>(map.getWidth(), false));
+    // previous[y][x] = the cell we stepped from to reach (x, y).
     std::vector<std::vector<Position>> previous(
         map.getHeight(),
         std::vector<Position>(map.getWidth(),
@@ -153,9 +160,10 @@ Position Critter::nextPosition(const Map &map) const
 
     if (!visited[exit.y][exit.x])
     {
-        return position;
+        return position; // no way through, so stay put
     }
 
+    // walk back from the exit to the cell right after ours
     Position step = exit;
     while (previous[step.y][step.x] != position)
     {
@@ -180,6 +188,8 @@ void Critter::move(const Map &map, double elapsedSeconds)
         return;
     }
 
+    // Only whole cells get walked; the leftover fraction carries over, so a
+    // speed of 0.5 means one step every two turns.
     movementRemainder += speed * elapsedSeconds;
     const int steps = static_cast<int>(std::floor(movementRemainder));
     movementRemainder -= steps;
@@ -189,7 +199,7 @@ void Critter::move(const Map &map, double elapsedSeconds)
         const Position next = nextPosition(map);
         if (next == position)
         {
-            break;
+            break; // stuck, or already at the exit
         }
         position = next;
         if (position.x == map.getExitX() && position.y == map.getExitY())

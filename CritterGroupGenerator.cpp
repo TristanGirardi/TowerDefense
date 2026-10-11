@@ -28,6 +28,8 @@ CritterGroup CritterGroupGenerator::generate(int waveLevel) const
         throw std::invalid_argument("Wave level must be greater than zero.");
     }
 
+    // Each wave: one more critter, HP and reward scale with the level,
+    // +1 strength every two waves, +5% speed per wave.
     const int count = baseCritterCount + waveLevel - 1;
     const int hitPoints = baseHitPoints * waveLevel;
     const int strength = baseStrength + (waveLevel - 1) / 2;

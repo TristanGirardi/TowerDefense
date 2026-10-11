@@ -3,6 +3,8 @@
 
 #include "CritterGroup.h"
 
+// Called at the start of each wave to build its critters. You give it the
+// wave 1 stats and later waves are scaled up from those.
 class CritterGroupGenerator
 {
 private:
@@ -19,6 +21,7 @@ public:
                           double baseSpeed = 1.0,
                           int baseReward = 2);
 
+    // waveLevel starts at 1
     CritterGroup generate(int waveLevel) const;
 };
 

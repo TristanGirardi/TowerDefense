@@ -6,11 +6,14 @@
 #include <cstddef>
 #include <vector>
 
+// One wave. All the critters are made up front, then let onto the map one at
+// a time with spawnNext(). The vector never changes size after that, so it's
+// fine for towers and the GUI to hold pointers into it.
 class CritterGroup
 {
 private:
     std::vector<Critter> critters;
-    std::size_t nextCritterIndex;
+    std::size_t nextCritterIndex; // how many have spawned so far
 
 public:
     CritterGroup();
@@ -22,17 +25,19 @@ public:
     const std::vector<Critter> &getCritters() const;
     std::vector<Critter> &getCritters();
 
-    // Spawns the next critter at the map entry, preserving group order.
+    // Puts the next critter on the entry. nullptr when the wave is all out.
     Critter *spawnNext(const Map &map);
+
+    // The critter in the lead (first one spawned that's still alive).
     Critter *getNextCritter();
 
     // Advances every active critter by one turn.
     void moveCritters(const Map &map);
 
-    // Applies damage and returns the newly earned reward, if any.
+    // Returns the reward if this hit killed it, 0 otherwise.
     int attack(std::size_t index, int damage);
 
-    // Returns the total coin loss caused by critters that reached the exit.
+    // Coins stolen by critters that reached the exit since the last call.
     int collectExitLoss();
 };
 

@@ -3,8 +3,8 @@
 
 #include <vector>
 
-// Towers can go on sceneries, critters can move on paths, and critters can enter and exit the map through entry and exit tiles.
-// Each cell in the map is represented by a TileType, which can be one of the following: SCENERY, PATH, ENTRY, or EXIT.
+// Towers go on scenery, critters walk on path. Entry and exit are path cells
+// too, there's just one of each.
 enum class TileType
 {
     SCENERY,
@@ -13,43 +13,37 @@ enum class TileType
     EXIT
 };
 
+// A width x height grid of tiles. (0, 0) is the top-left corner.
+// The map doesn't know about towers or critters, they just ask it questions.
 class Map
 {
 private:
-    // 2D vector to store the map tiles for the grid
-    std::vector<std::vector<TileType>> map;
+    std::vector<std::vector<TileType>> map; // indexed map[y][x]
 
-    // Store dimensions
     int width;
     int height;
 
 public:
+    // Blank map, all scenery. Throws if a size is 0 or negative.
     Map(int width, int height);
 
-    // Function to set a tile at a specific position
+    // Out of bounds prints an error instead of crashing.
     void setTile(int x, int y, TileType type);
+    TileType getTile(int x, int y) const; // SCENERY if out of bounds
 
-    // Function to get the tile type at a specific position
-    TileType getTile(int x, int y) const;
-
-    // Function to make sure only one entry exists, one exit exists and that entry is connected to exit using a path
+    // One entry, one exit, and a path connecting them.
     bool validate() const;
 
-    // Function to get the width of the map
     int getWidth() const;
-
-    // Function to get the height of the map
     int getHeight() const;
 
+    // -1 if there isn't one yet
     int getEntryX() const;
-
     int getEntryY() const;
-
     int getExitX() const;
-
     int getExitY() const;
 
-    // Function to display the map
+    // S = scenery, P = path, E = entry, X = exit
     void display() const;
 };
 

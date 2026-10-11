@@ -48,6 +48,7 @@ Critter *CritterGroup::spawnNext(const Map &map)
         throw std::invalid_argument("The map must have an entry point.");
     }
 
+    // Critter has no setPosition(), so we remake it on the entry.
     Critter &critter = critters[nextCritterIndex++];
     critter = Critter(critter.getReward(), critter.getHitPoints(),
                       critter.getStrength(), critter.getSpeed(),
@@ -55,6 +56,8 @@ Critter *CritterGroup::spawnNext(const Map &map)
     return &critter;
 }
 
+// They spawn in order and move at the same speed, so the earliest one
+// still alive is in front.
 Critter *CritterGroup::getNextCritter()
 {
     for (std::size_t index = 0; index < nextCritterIndex; ++index)
@@ -67,6 +70,7 @@ Critter *CritterGroup::getNextCritter()
     return nullptr;
 }
 
+// Only spawned ones move. Critter::move() already ignores dead ones.
 void CritterGroup::moveCritters(const Map &map)
 {
     for (std::size_t index = 0; index < nextCritterIndex; ++index)

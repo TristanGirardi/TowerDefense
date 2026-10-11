@@ -1,4 +1,4 @@
-// Driver for the marker. It first runs console tests for the Map (Part 1),
+// Test driver. It first runs console tests for the Map (Part 1),
 // Tower (Part 2) and Critter group generator (Part 3) classes, prints whether
 // each check passed, and then opens the graphical game.
 

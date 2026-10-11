@@ -4,8 +4,7 @@
 #include <stdexcept>
 #include <cmath>
 
-//Constructor
-
+// A new tower starts at level 1 and can shoot right away.
 Tower::Tower(const std::string& name, float x,float y, const std::vector<TowerStats>& levelTable){
     this->name = name;
     this->x = x;
@@ -16,7 +15,7 @@ Tower::Tower(const std::string& name, float x,float y, const std::vector<TowerSt
 }
 
 
-//Economy: Costs for buying, upgrading, refund value
+// Buying, upgrading and selling
 
 int Tower::getBuyCost() const{
     return levels[0].cost;
@@ -48,12 +47,12 @@ bool Tower::upgrade() {
 int Tower::getRefundValue() const{
     int spent =0;
     for (int i=0; i <=level;i++){
-        spent += levels[i].cost;//buy cost + every upgrade paid
+        spent += levels[i].cost; // buy price + every upgrade
     }
-    return spent/2;//The refund will be half what is spent
+    return spent/2; // you get half of it back
 }
 
-//Getters
+// Getters
 const std::string& Tower::getName()const {return name;}
 int Tower::getLevel() const {return level+1;}
 int Tower::getMaxLevel() const {return static_cast<int>(levels.size());}
@@ -63,7 +62,7 @@ const TowerStats& Tower::getStats() const {return levels[level];}
 
 
 
-//Combat Helpers
+// Targeting
 
 float Tower::distance(float x1, float y1, float x2, float y2){
     float dx = x2-x1;
@@ -81,13 +80,14 @@ bool Tower::isInRange(const Critter& critter) const{
 }
 
 
+// We go for the closest critter. On a tie, the first one in the list wins.
 Critter* Tower::selectTarget(const std::vector<Critter*>& critters) const {
     Critter* best = nullptr;
     float bestDistance = 0.0f;
 
     for (Critter* c : critters){
         if (c == nullptr || !isInRange(*c)){
-            continue; //skip those out of range or dead
+            continue; // dead, already escaped, or too far away
         }
 
         float d = distance(x,y,c->getPosition().x,c->getPosition().y);
@@ -97,10 +97,10 @@ Critter* Tower::selectTarget(const std::vector<Critter*>& critters) const {
             bestDistance = d;
         }
     }
-    return best; //nullptr if nothing in range
+    return best; // still nullptr if nobody was in range
 }
 
-//Detect->Select->Fire
+// Detect -> select -> shoot, once per frame
 
 void Tower::update(float dt, std::vector<Critter*>& critters){
     if (cooldown > 0.0f){
@@ -108,21 +108,25 @@ void Tower::update(float dt, std::vector<Critter*>& critters){
     }
 
     if (cooldown > 0.0f){
-        return;//Still reload
+        return; // still reloading
     }
 
     Critter* target = selectTarget(critters);
     if (target == nullptr){
-        cooldown = 0.0f;//stay ready, shoot when soemthing is in range
+        // stay loaded so it fires as soon as something walks into range
+        cooldown = 0.0f;
         return ;
     }
 
     applyEffect(*target,critters);//Fires, effect depends on tower
 
-    cooldown = 1.0f/getStats().fireRate;
+    cooldown = 1.0f/getStats().fireRate; // e.g. 2 shots/s = wait 0.5s
 }
 
-//Tower #1: Direct Tower(Default)
+// Tower types. Each one only has a name, an upgrade table and applyEffect().
+
+//Tower #1
+// Direct Tower: cheapest, and it has the most levels.
 DirectTower::DirectTower(float x, float y)
     : Tower("Direct Tower", x, y, {
         //  cost  range  power  fireRate
@@ -136,11 +140,9 @@ DirectTower::DirectTower(float x, float y)
 void DirectTower::applyEffect(Critter& target,std::vector<Critter*>& /*critters*/) {
     target.takeDamage(getStats().power);
 }
- 
 
-//Tower #2: SplashTower: damages the target and every critter near it
-
- 
+//Tower #2
+// Splash Tower: weaker and slower, but it hits a whole group at once.
 SplashTower::SplashTower(float x, float y)
     : Tower("Splash Tower", x, y, {
         //  cost  range  power  fireRate
@@ -155,10 +157,10 @@ void SplashTower::applyEffect(Critter& target,
                               std::vector<Critter*>& critters) {
     int power = getStats().power;
  
-    // Hit every other living critter close to the target.
+    // The blast is centred on the target, not on the tower.
     for (Critter* c : critters) {
         if (c == nullptr || c == &target || !c->isAlive()) {
-            continue;  // the target itself is hit separately below
+            continue;  // the target gets hit on its own below
         }
         float d = distance(target.getPosition().x, target.getPosition().y, c->getPosition().x, c->getPosition().y);
         if (d <= splashRadius) {
@@ -168,10 +170,9 @@ void SplashTower::applyEffect(Critter& target,
  
     target.takeDamage(power);
 }
- 
 
-//Tower #3: HunterTower: bonus damage against high-level critters
-
+//Tower #3
+// Hunter Tower: does double damage to critters of level 3 and up.
 HunterTower::HunterTower(float x, float y)
     : Tower("Hunter Tower", x, y, {
         //  cost  range  power  fireRate

@@ -138,6 +138,8 @@ struct Shot
     float timeLeft;
 };
 
+// Keeps the coins, lives, towers and current wave. This is where the money
+// rules happen: paying for towers, getting rewards, losing coins and lives.
 class Game
 {
 public:
@@ -238,6 +240,7 @@ public:
         towerKinds.erase(towerKinds.begin() + index);
     }
 
+    // Each frame: spawn, move, towers shoot, pay rewards, check if the wave is done.
     void update(float dt)
     {
         for (Shot &shot : shots)
@@ -295,6 +298,7 @@ public:
         }
 
         // Let each tower fire, and draw a beam to every critter it hurt.
+        // Towers don't report who they hit, so we compare HP before and after.
         std::vector<int> before(active.size());
         for (std::size_t t = 0; t < towers.size(); ++t)
         {
