@@ -1,4 +1,5 @@
-// Graphical game built on the Tower Defense classes, drawn with SFML.
+// The playable version of the game. It uses the same Map, Tower and Critter
+// classes as the tests, and SFML does the drawing.
 //
 // Controls:
 //   1 / 2 / 3          choose Direct, Splash or Hunter tower
@@ -43,6 +44,8 @@ constexpr float SpawnInterval = 0.8f;
 constexpr float ShotDuration = 0.08f;
 constexpr float MessageDuration = 2.5f;
 
+// The tower the player currently has picked. Don't reorder these: clicking
+// a swatch turns its slot number (0, 1, 2) straight into one of these.
 enum class TowerKind
 {
     Direct,
@@ -50,11 +53,11 @@ enum class TowerKind
     Hunter
 };
 
-// The tower's on-screen look.
+// What a tower looks like on screen, so the three types are easy to tell apart.
 struct TowerLook
 {
     sf::Color color;
-    std::size_t points; // 3 = triangle, 4 = diamond, 30 = circle.
+    std::size_t points; // corners: 3 is a triangle, 4 a diamond, 30 is basically a circle
 };
 
 TowerLook lookFor(TowerKind kind)
@@ -71,6 +74,7 @@ TowerLook lookFor(TowerKind kind)
     return {sf::Color::White, 30};
 }
 
+// Builds the right Tower subclass for whatever the player picked.
 std::unique_ptr<Tower> makeTower(TowerKind kind, int x, int y)
 {
     const float fx = static_cast<float>(x);
@@ -87,7 +91,8 @@ std::unique_ptr<Tower> makeTower(TowerKind kind, int x, int y)
     return nullptr;
 }
 
-// A winding path from the left edge to the right edge.
+// Our game map. We list the corners of the path and fill in the straight
+// lines between them, which is easier than setting every tile by hand.
 Map buildMap()
 {
     Map map(MapWidth, MapHeight);
@@ -106,6 +111,8 @@ Map buildMap()
             {
                 break;
             }
+            // Each comparison is 0 or 1, so this moves us +1, -1 or 0 toward
+            // the next corner.
             current.x += (target.x > current.x) - (target.x < current.x);
             current.y += (target.y > current.y) - (target.y < current.y);
         }
@@ -115,12 +122,15 @@ Map buildMap()
     return map;
 }
 
+// The game thinks in grid cells but SFML wants pixels, so this gives the
+// middle of a cell in pixels.
 sf::Vector2f cellCenter(float x, float y)
 {
     return {(x + 0.5f) * Cell, (y + 0.5f) * Cell};
 }
 
-// Critters move a whole cell at a time; this slides the drawing between cells.
+// Critters jump a whole cell at a time, which looked choppy, so we remember
+// where each one came from and slide it across.
 struct CritterVisual
 {
     Position from{0, 0};
@@ -130,6 +140,8 @@ struct CritterVisual
     bool escapeCounted = false;
 };
 
+// The quick flash of a line from a tower to whatever it just hit, so you can
+// actually see the towers shooting.
 struct Shot
 {
     sf::Vector2f from;
@@ -138,13 +150,15 @@ struct Shot
     float timeLeft;
 };
 
-// Keeps the coins, lives, towers and current wave. This is where the money
-// rules happen: paying for towers, getting rewards, losing coins and lives.
+// Everything about one game in progress: coins, lives, towers and the current
+// wave. The other classes only report what happened, and this is where we
+// actually add or take away the coins and lives.
 class Game
 {
 public:
     Game() : map(buildMap()) { reset(); }
 
+    // Wipes everything and starts over. Also used when you press R.
     void reset()
     {
         wave = CritterGroup();
@@ -161,6 +175,8 @@ public:
         say("Build some towers, then press Space to send the first wave.");
     }
 
+    // Sends the next wave (each one is harder). Pressing Space mid-wave does
+    // nothing, so you can't stack waves on top of each other.
     void startWave()
     {
         if (gameOver || waveActive)
@@ -176,8 +192,11 @@ public:
             std::to_string(wave.size()) + " critters.");
     }
 
+    // Called from the 1/2/3 keys and the swatches.
     void select(TowerKind kind) { selected = kind; }
 
+    // Left-clicking does two jobs: if there's already a tower on the cell we
+    // upgrade it, otherwise we try to build the picked tower there.
     void leftClick(int x, int y)
     {
         if (gameOver)
@@ -222,6 +241,7 @@ public:
         towerKinds.push_back(selected);
     }
 
+    // Right-clicking a tower sells it and gives you back half of what you put in.
     void rightClick(int x, int y)
     {
         if (gameOver)
@@ -240,7 +260,8 @@ public:
         towerKinds.erase(towerKinds.begin() + index);
     }
 
-    // Each frame: spawn, move, towers shoot, pay rewards, check if the wave is done.
+    // Runs once per frame. In order: let a new critter in, move everyone,
+    // let the towers shoot, pay out rewards, then see if the wave is over.
     void update(float dt)
     {
         for (Shot &shot : shots)
@@ -259,7 +280,7 @@ public:
 
         std::vector<Critter> &critters = wave.getCritters();
 
-        // Spawn the next critter at the entry.
+        // Critters come in one at a time with a small gap, not all at once.
         spawnTimer -= dt;
         if (spawnTimer <= 0.0f && wave.getNextCritterIndex() < wave.size())
         {
@@ -297,8 +318,8 @@ public:
             active.push_back(&critter);
         }
 
-        // Let each tower fire, and draw a beam to every critter it hurt.
-        // Towers don't report who they hit, so we compare HP before and after.
+        // Let each tower fire. The Tower class doesn't tell us who it hit, so
+        // to draw the beams we check whose HP went down.
         std::vector<int> before(active.size());
         for (std::size_t t = 0; t < towers.size(); ++t)
         {
@@ -339,6 +360,8 @@ public:
         }
     }
 
+    // Draws the whole screen. The order matters since later things go on top.
+    // font is null if we couldn't find one on the computer.
     void draw(sf::RenderWindow &window, const sf::Font *font, sf::Vector2i mouse) const
     {
         drawMap(window, mouse);
@@ -348,6 +371,8 @@ public:
         drawHud(window, font);
     }
 
+    // We also put the stats in the window title, in case there's no font
+    // and the HUD can't show text.
     std::string titleText() const
     {
         return "Tower Defense - Wave " + std::to_string(waveLevel) + " - Coins " +
@@ -360,7 +385,7 @@ private:
     CritterGroup wave;
     std::vector<CritterVisual> visuals;
     std::vector<std::unique_ptr<Tower>> towers;
-    std::vector<TowerKind> towerKinds; // Parallel to towers, for drawing.
+    std::vector<TowerKind> towerKinds; // same order as towers, so we know how to draw each one
     std::vector<Shot> shots;
 
     int coins = 0;
@@ -373,12 +398,14 @@ private:
     std::string message;
     float messageTime = 0.0f;
 
+    // Pops a message up in the HUD for a couple of seconds.
     void say(const std::string &text)
     {
         message = text;
         messageTime = MessageDuration;
     }
 
+    // Finds which tower is sitting on this cell. -1 means there isn't one.
     int towerAt(int x, int y) const
     {
         for (std::size_t i = 0; i < towers.size(); ++i)
@@ -392,6 +419,8 @@ private:
         return -1;
     }
 
+    // Where to draw a critter this frame. It's somewhere between the cell it
+    // left and the one it's heading to, depending on how far along it is.
     sf::Vector2f critterPixel(std::size_t index) const
     {
         const CritterVisual &visual = visuals[index];
@@ -401,6 +430,7 @@ private:
         return cellCenter(x, y);
     }
 
+    // The see-through circle that shows how far a tower can reach.
     static void drawRangeCircle(sf::RenderWindow &window, float x, float y, float range)
     {
         sf::CircleShape circle(range * Cell, 60);
@@ -412,6 +442,8 @@ private:
         window.draw(circle);
     }
 
+    // Draws the grid (grass, path, entry, exit), then highlights the cell
+    // under the mouse.
     void drawMap(sf::RenderWindow &window, sf::Vector2i mouse) const
     {
         sf::RectangleShape tile({Cell, Cell});
@@ -443,7 +475,8 @@ private:
             }
         }
 
-        // Hover highlight and range preview.
+        // Hovering shows the range: of the tower that's there, or of the one
+        // you'd build if the cell is empty.
         const int mx = static_cast<int>(mouse.x / Cell);
         const int my = static_cast<int>(mouse.y / Cell);
         if (mouse.x < 0 || mouse.y < 0 || mx >= MapWidth || my >= MapHeight)
@@ -470,6 +503,7 @@ private:
         }
     }
 
+    // Draws the towers. Each type has its own shape and colour.
     void drawTowers(sf::RenderWindow &window) const
     {
         for (std::size_t i = 0; i < towers.size(); ++i)
@@ -487,7 +521,7 @@ private:
             body.setOutlineThickness(2.0f);
             window.draw(body);
 
-            // One pip per level along the bottom of the cell.
+            // Little yellow dots under the tower, one for each level.
             const float pip = 3.5f;
             const int levels = tower.getLevel();
             const float startX = center.x - (levels - 1) * pip * 1.4f;
@@ -502,6 +536,8 @@ private:
         }
     }
 
+    // Draws the critters that are on the map and still alive. Tougher
+    // critters are a darker red so you can spot them.
     void drawCritters(sf::RenderWindow &window) const
     {
         const std::vector<Critter> &critters = wave.getCritters();
@@ -525,7 +561,7 @@ private:
             body.setOutlineThickness(2.0f);
             window.draw(body);
 
-            // Hit point bar.
+            // Health bar above the critter. It goes yellow under half HP.
             const float barWidth = Cell * 0.6f;
             const float fraction = static_cast<float>(critter.getHitPoints()) /
                                    static_cast<float>(visuals[i].maxHitPoints);
@@ -541,6 +577,8 @@ private:
         }
     }
 
+    // SFML doesn't have thick lines, so each beam is a thin rectangle turned
+    // to point at the critter.
     void drawShots(sf::RenderWindow &window) const
     {
         for (const Shot &shot : shots)
@@ -556,6 +594,8 @@ private:
         }
     }
 
+    // The panel at the bottom. On the left you pick a tower and see its stats,
+    // and on the right are the wave, coins, lives, controls and messages.
     void drawHud(sf::RenderWindow &window, const sf::Font *font) const
     {
         const float top = MapHeight * Cell;
@@ -564,7 +604,7 @@ private:
         panel.setFillColor(sf::Color(30, 32, 40));
         window.draw(panel);
 
-        // Tower picker swatches, so the HUD is usable even without a font.
+        // The tower swatches are just shapes, so they still work without a font.
         const TowerKind kinds[] = {TowerKind::Direct, TowerKind::Splash, TowerKind::Hunter};
         for (int k = 0; k < 3; ++k)
         {
@@ -627,6 +667,8 @@ private:
     }
 };
 
+// SFML doesn't come with a font, so we borrow one from the computer. If none
+// of these exist the game still works, there's just no text in the HUD.
 std::optional<sf::Font> loadFont()
 {
     const char *candidates[] = {
@@ -647,6 +689,8 @@ std::optional<sf::Font> loadFont()
 }
 }
 
+// Opens the window and keeps the game going until you close it. Every frame
+// we handle the keyboard and mouse, update the game, then redraw it.
 void runGui()
 {
     sf::RenderWindow window(sf::VideoMode({WindowWidth, WindowHeight}), "Tower Defense",
@@ -698,7 +742,7 @@ void runGui()
                 const int y = static_cast<int>(click->position.y / Cell);
                 if (click->position.y >= MapHeight * Cell)
                 {
-                    // Clicking a swatch in the HUD picks that tower.
+                    // Clicked the bottom panel, so check if it was on a swatch.
                     const int slot = (click->position.x - 20) / 70;
                     if (click->position.x >= 20 && slot < 3)
                     {
@@ -719,7 +763,8 @@ void runGui()
             }
         }
 
-        // Cap the step so dragging the window doesn't teleport critters.
+        // Dragging the window freezes the game for a moment, and without this
+        // cap the critters would jump way ahead when it comes back.
         const float dt = std::min(clock.restart().asSeconds(), 0.05f);
         game.update(dt);
 

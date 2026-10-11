@@ -1,3 +1,5 @@
+We certify that this submission is the original work of members of the group and meets the Faculty's Expectations of Originality
+
 # TowerDefense
 
 Matthew Benkhellat - 40325455
@@ -7,6 +9,8 @@ Tristan Girardi - 40272203
 Youssef Yassa - 40265083
 
 Youssef Youssef - 40285384
+
+10/11/2026
 
 ## Game rules
 
