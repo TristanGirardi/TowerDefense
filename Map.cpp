@@ -1,8 +1,7 @@
 #include "Map.h"
 
 #include <iostream>
-#include <queue>
-#include <utility>
+#include <functional>
 #include <stdexcept>
 
 Map::Map(int width, int height) : width(width), height(height)
@@ -139,7 +138,7 @@ void Map::display() const
     }
 }
 
-// First check there's exactly one entry and one exit, then do a BFS from the
+// First check there's exactly one entry and one exit, then do a DFS from the
 // entry over path cells to see if we can reach the exit.
 bool Map::validate() const
 {
@@ -177,46 +176,38 @@ bool Map::validate() const
         height,
         std::vector<bool>(width, false));
 
-    // Same BFS idea the critters use, except here we only care whether the
-    // exit gets reached at all.
-    std::queue<std::pair<int, int>> pending;
-    pending.push({entryX, entryY});
-    visited[entryY][entryX] = true;
-
-    // No diagonal moves, only the four neighbours.
-    const int dx[] = {1, -1, 0, 0};
-    const int dy[] = {0, 0, 1, -1};
-
-    while (!pending.empty())
+    // We only care whether the exit can be reached at all, not how short the
+    // route is, so a plain recursive DFS is enough here.
+    std::function<bool(int, int)> dfs =
+        [&](int x, int y) -> bool
     {
-        const int x = pending.front().first;
-        const int y = pending.front().second;
-        pending.pop();
-
+        if (x < 0 || x >= width || y < 0 || y >= height)
+        {
+            return false; // off the edge
+        }
+        if (visited[y][x] || map[y][x] == TileType::SCENERY)
+        {
+            return false; // been here, or critters can't walk on it
+        }
         if (map[y][x] == TileType::EXIT)
         {
             return true;
         }
 
-        for (int i = 0; i < 4; ++i)
-        {
-            const int nx = x + dx[i];
-            const int ny = y + dy[i];
+        visited[y][x] = true;
 
-            if (nx < 0 || nx >= width || ny < 0 || ny >= height)
-            {
-                continue; // off the edge
-            }
-            if (visited[ny][nx] || map[ny][nx] == TileType::SCENERY)
-            {
-                continue; // been here, or critters can't walk on it
-            }
+        // No diagonal moves, only the four neighbours.
+        return dfs(x + 1, y) ||
+               dfs(x - 1, y) ||
+               dfs(x, y + 1) ||
+               dfs(x, y - 1);
+    };
 
-            visited[ny][nx] = true;
-            pending.push({nx, ny});
-        }
+    if (!dfs(entryX, entryY))
+    {
+        std::cerr << "Error: No valid path exists from entry to exit." << std::endl;
+        return false;
     }
 
-    std::cerr << "Error: No valid path exists from entry to exit." << std::endl;
-    return false;
+    return true;
 }

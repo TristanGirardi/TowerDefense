@@ -1,10 +1,10 @@
 # TowerDefense
 
-Matthew Benkhellat - 
+Matthew Benkhellat - 40325455
 
-Tristan Girardi - 
+Tristan Girardi - 40272203
 
-Youssef Yassa - 
+Youssef Yassa - 40265083
 
 Youssef Youssef - 40285384
 
@@ -41,7 +41,7 @@ Sources:
 ## Design
 
 - `Map`: a grid of tiles (scenery, path, entry, exit). `validate()` checks
-  that there's one entry and one exit, then runs a BFS to make sure a path
+  that there's one entry and one exit, then runs a DFS to make sure a path
   connects them.
 - `Tower`: an abstract base class that handles cost, upgrades, refunds,
   targeting and reloading. Each subclass (`DirectTower`, `SplashTower`,
