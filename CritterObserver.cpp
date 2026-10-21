@@ -29,11 +29,7 @@ void CritterObserver::update()
 
 void runCritterObserverDemo()
 {
-    std::cout << "========== Critter observer demo (Part 3) ==========" << std::endl;
-    std::cout << "Watch the lines below: each block appears because notify() "
-                 "called CritterObserver::update()."
-              << std::endl
-              << std::endl;
+    std::cout << "========== Critter observer demo ==========" << std::endl;
 
     Map map(4, 2);
     map.setTile(0, 0, TileType::ENTRY);
@@ -59,5 +55,5 @@ void runCritterObserverDemo()
     group.removeCritter(group.size() - 1);
 
     group.detach(&observer);
-    std::cout << "Part 3 demo finished." << std::endl << std::endl;
+    std::cout << "Critter observer demo finished." << std::endl << std::endl;
 }

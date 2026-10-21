@@ -416,10 +416,10 @@ void testCritter()
     std::cout << std::endl;
 }
 
-// Part 3: make sure notify() actually reaches an observer (no printing needed).
+// Checks that notify() reaches an attached observer when the wave changes.
 void testCritterObserver()
 {
-    std::cout << "========== Assignment 2: Critter observer ==========" << std::endl;
+    std::cout << "========== Critter observer tests ==========" << std::endl;
 
     class CountingObserver : public Observer
     {
@@ -479,7 +479,6 @@ int main()
               << std::endl
               << std::endl;
 
-    // Part 3 walkthrough for the marker (console view).
     runCritterObserverDemo();
 
     std::cout << "========== Starting the GUI ==========" << std::endl;

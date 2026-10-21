@@ -8,10 +8,8 @@
 #include <vector>
 
 // One wave of critters. spawnNext() puts them on the map one at a time.
-//
-// Assignment 2 part 3: we treat the wave as the observable thing, not each
-// Critter on its own — you add and remove critters from this group, and
-// CritterObserver listens for those changes.
+// The whole wave is observable: add/remove critters here and CritterObserver
+// gets notified (single Critter objects stay as they were in A1).
 class CritterGroup : public Observable
 {
 private:
@@ -31,7 +29,6 @@ public:
     // Puts the next critter on the entry. nullptr when the wave is all out.
     Critter *spawnNext(const Map &map);
 
-    // Used by the part 3 driver demo; both call notify() when done.
     void addCritter(Critter critter);
     void removeCritter(std::size_t index);
 
