@@ -1,6 +1,7 @@
 #include "Tower.h"
 #include "Critter.h"
 
+
 #include <stdexcept>
 #include <cmath>
 
@@ -40,6 +41,7 @@ bool Tower::upgrade() {
         return false;
     }
     level++;
+    notify();
     return true;
 }
 
@@ -60,7 +62,12 @@ float Tower::getX() const {return x;}
 float Tower::getY() const {return y;}
 const TowerStats& Tower::getStats() const {return levels[level];}
 
-
+//Setters
+void Tower::setPosition(float x, float y){
+    this->x = x;
+    this->y = y;
+    notify(); // tell observers the tower moved
+}
 
 // Targeting
 
@@ -121,6 +128,8 @@ void Tower::update(float dt, std::vector<Critter*>& critters){
     applyEffect(*target,critters);//Fires, effect depends on tower
 
     cooldown = 1.0f/getStats().fireRate; // e.g. 2 shots/s = wait 0.5s
+
+    notify();
 }
 
 // Tower types. Each one only has a name, an upgrade table and applyEffect().

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "Observable.h"
 
 class Critter;
 
@@ -17,7 +18,7 @@ struct TowerStats {
 // Base class for all towers. Buying, upgrading, selling, aiming and reloading
 // work the same for every tower, so they live here. Only what a shot does
 // changes, so that's the one virtual function, applyEffect().
-class Tower {
+class Tower : public Observable {
 public:
     Tower(const std::string& name, float x, float y,
           const std::vector<TowerStats>& levelTable);
@@ -34,6 +35,9 @@ public:
 
     // Called every frame: reload, find the closest critter in range, shoot.
     void update(float dt, std::vector<Critter*>& critters);
+
+    // Moves the position of the tower, tells observer
+    void setPosition(float x, float y);
 
     const std::string& getName() const;
     int   getLevel() const;     // starts at 1
