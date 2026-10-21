@@ -53,7 +53,32 @@ Critter *CritterGroup::spawnNext(const Map &map)
     critter = Critter(critter.getReward(), critter.getHitPoints(),
                       critter.getStrength(), critter.getSpeed(),
                       critter.getLevel(), {map.getEntryX(), map.getEntryY()});
+    // Something visible changed (critter entered the map), tell observers.
+    notify();
     return &critter;
+}
+
+void CritterGroup::addCritter(Critter critter)
+{
+    critters.push_back(std::move(critter));
+    notify(); // e.g. CritterObserver prints the updated wave
+}
+
+void CritterGroup::removeCritter(std::size_t index)
+{
+    if (index >= critters.size())
+    {
+        throw std::out_of_range("Critter index is out of range.");
+    }
+
+    // If we remove someone who already spawned, keep the spawn count in sync.
+    if (index < nextCritterIndex)
+    {
+        --nextCritterIndex;
+    }
+
+    critters.erase(critters.begin() + index);
+    notify();
 }
 
 // They spawn in order and move at the same speed, so the earliest one

@@ -37,6 +37,7 @@ FetchContent_MakeAvailable(SFML)
 add_executable(TowerDefenseDriver
     Driver.cpp
     Gui.cpp
+    CritterObserver.cpp
 )
 
 # SFML 3 requires C++17; the library itself stays C++11.

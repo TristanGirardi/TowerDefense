@@ -63,6 +63,16 @@ report what happened (a kill's reward, the coins a critter stole), and the
 classes work in both the console tests and the game window. The code
 comments go into more detail.
 
+### Observer pattern (assignment 2)
+
+- `Observable` / `Observer`: `attach`, `detach`, and `notify()` when something
+  changes (same idea as in the course notes).
+- `Tower` (part 1): notifies on move, upgrade, and after firing.
+- `Map` (part 2): to be wired by the map observer teammate.
+- `CritterGroup` (part 3): notifies on `addCritter`, `removeCritter`, and
+  `spawnNext`. `CritterObserver` prints the wave in `update()`. The driver runs
+  a short console demo, then opens the SFML game.
+
 ## Tools
 
 - CMake, because CLion uses it and it downloads SFML on its own, so you

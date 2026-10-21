@@ -3,9 +3,12 @@
 // each check passed, and then opens the graphical game.
 
 #include "Critter.h"
+#include "CritterGroup.h"
 #include "CritterGroupGenerator.h"
+#include "CritterObserver.h"
 #include "Gui.h"
 #include "Map.h"
+#include "Observer.h"
 #include "Tower.h"
 
 #include <iostream>
@@ -413,6 +416,49 @@ void testCritter()
     std::cout << std::endl;
 }
 
+// Part 3: make sure notify() actually reaches an observer (no printing needed).
+void testCritterObserver()
+{
+    std::cout << "========== Assignment 2: Critter observer ==========" << std::endl;
+
+    class CountingObserver : public Observer
+    {
+    public:
+        int count;
+
+        CountingObserver() : count(0) {}
+
+        void update() override
+        {
+            ++count;
+        }
+    };
+
+    Map map(4, 2);
+    map.setTile(0, 0, TileType::ENTRY);
+    map.setTile(1, 0, TileType::PATH);
+    map.setTile(2, 0, TileType::PATH);
+    map.setTile(3, 0, TileType::EXIT);
+
+    CritterGroup group;
+    CountingObserver counter;
+    group.attach(&counter);
+
+    Critter sample(4, 20, 2, 1.0, 1);
+    group.addCritter(sample);
+    check(counter.count == 1, "adding a critter notifies the observer once");
+
+    group.spawnNext(map);
+    check(counter.count == 2, "spawnNext notifies the observer");
+
+    group.removeCritter(0);
+    check(counter.count == 3 && group.empty(),
+          "removeCritter notifies the observer and clears the wave");
+
+    group.detach(&counter);
+    std::cout << std::endl;
+}
+
 int main()
 {
     std::cout << "################################################" << std::endl;
@@ -424,6 +470,7 @@ int main()
     testMap();
     testTower();
     testCritter();
+    testCritterObserver();
 
     std::cout << "========== Test summary ==========" << std::endl;
     std::cout << passedChecks << " passed, " << failedChecks << " failed"
@@ -431,6 +478,9 @@ int main()
     std::cout << (failedChecks == 0 ? "ALL TESTS PASSED" : "SOME TESTS FAILED")
               << std::endl
               << std::endl;
+
+    // Part 3 walkthrough for the marker (console view).
+    runCritterObserverDemo();
 
     std::cout << "========== Starting the GUI ==========" << std::endl;
     std::cout << "Close the game window to exit." << std::endl;
