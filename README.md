@@ -63,7 +63,7 @@ report what happened (a kill's reward, the coins a critter stole), and the
 classes work in both the console tests and the game window. The code
 comments go into more detail.
 
-### Observer pattern (assignment 2)
+### Observer pattern 
 
 - `Observable` / `Observer`: `attach`, `detach`, and `notify()` when something
   changes (same idea as in the course notes).
@@ -72,8 +72,7 @@ comments go into more detail.
 - `CritterGroup` (part 3): notifies on `addCritter`, `removeCritter`, and
   `spawnNext`. `CritterObserver` prints the wave in `update()`. The driver runs
   a short console demo, then opens the SFML game. We use `CritterGroup` as the
-  observable because add and remove apply to the wave; each `Critter` is still
-  the same class as in assignment 1.
+  observable because add and remove apply to the wave;
 
 ## Tools
 
