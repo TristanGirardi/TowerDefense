@@ -71,7 +71,9 @@ comments go into more detail.
 - `Map` (part 2): to be wired by the map observer teammate.
 - `CritterGroup` (part 3): notifies on `addCritter`, `removeCritter`, and
   `spawnNext`. `CritterObserver` prints the wave in `update()`. The driver runs
-  a short console demo, then opens the SFML game.
+  a short console demo, then opens the SFML game. We use `CritterGroup` as the
+  observable because add and remove apply to the wave; each `Critter` is still
+  the same class as in assignment 1.
 
 ## Tools
 
