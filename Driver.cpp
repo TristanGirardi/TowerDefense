@@ -10,6 +10,7 @@
 #include "Map.h"
 #include "Observer.h"
 #include "Tower.h"
+#include "TowerObserver.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -266,6 +267,77 @@ void testTower()
     std::cout << std::endl;
 }
 
+
+
+void testTowerObserver()
+{
+    std::cout << "========== Tower observer tests ==========" << std::endl;
+
+    
+    class CountingObserver : public Observer
+    {
+    public:
+        int count;
+
+        CountingObserver() : count(0) {}
+
+        void update() override
+        {
+            ++count;
+        }
+    };
+
+    DirectTower tower(0.0f, 0.0f);
+    CountingObserver counter;
+    tower.attach(&counter);
+
+    tower.upgrade();
+    check(counter.count == 1, "upgrading notifies the observer once");
+
+    tower.setPosition(2.0f, 1.0f);
+    check(counter.count == 2 && tower.getX() == 2.0f && tower.getY() == 1.0f,
+          "setPosition moves the tower and notifies the observer");
+
+    Critter target(2, 100, 1, 1.0, 1, Position{3, 1});
+    std::vector<Critter *> inRange = {&target};
+    tower.update(1.0f, inRange);
+    check(counter.count == 3 && target.getHitPoints() < 100,
+          "firing at a critter notifies the observer");
+
+    tower.update(0.0f, inRange);
+    check(counter.count == 3, "no notify while the tower is reloading");
+
+    std::vector<Critter *> nobody;
+    tower.update(1.0f, nobody);
+    check(counter.count == 3, "no notify when there is nothing to shoot");
+
+    tower.upgrade();
+    tower.upgrade(); // level 4, the max for a Direct Tower
+    int before = counter.count;
+    check(!tower.upgrade() && counter.count == before,
+          "a refused upgrade at max level does not notify");
+
+    CountingObserver second;
+    tower.attach(&second);
+    tower.setPosition(0.0f, 0.0f);
+    check(counter.count == before + 1 && second.count == 1,
+          "every attached observer is notified");
+
+    tower.detach(&counter);
+    tower.setPosition(1.0f, 1.0f);
+    check(counter.count == before + 1 && second.count == 2,
+          "a detached observer is not notified anymore");
+
+    TowerObserver view(tower);
+    tower.attach(&view);
+    tower.setPosition(2.0f, 2.0f);
+    check(view.getUpdateCount() == 1, "TowerObserver receives the tower's notify");
+
+    tower.detach(&second);
+    tower.detach(&view);
+    std::cout << std::endl;
+}
+
 namespace
 {
 void printCritter(std::size_t index, const Critter &critter)
@@ -469,6 +541,7 @@ int main()
 
     testMap();
     testTower();
+    testTowerObserver();
     testCritter();
     testCritterObserver();
 
@@ -479,6 +552,7 @@ int main()
               << std::endl
               << std::endl;
 
+    runTowerObserverDemo();
     runCritterObserverDemo();
 
     std::cout << "========== Starting the GUI ==========" << std::endl;
