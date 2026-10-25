@@ -87,18 +87,19 @@ comments go into more detail.
   or a `CritterGroup`. Its `update()` method prints the current stats,
   including health, position and level. It also counts the number of
   updates received so the driver can verify that notifications occur.
-  The driver demonstrates individual critter movement and damage,
-  group additions and removals, and observer attachment and detachment.
+  For an individual critter it also has a `draw()` method that shows an
+  SFML panel (health bar, position, status, updates received). It draws the
+  values saved at the last `update()`, so a detached view stops changing.
+- `DemoText` has two small helpers (load a font, draw a line of text) used
+  by the Map and Critter demo windows.
 
 ## Tools
 
 - CMake, because CLion uses it and it downloads SFML on its own, so you
   don't need to install anything extra to build the project.
-- SFML for the game window and the Tower and Map observer views. It's a
-  simple C++ library for 2D drawing and mouse/keyboard input, which is
-  all the game needed.
-- The Critter Observer uses console output to display changes to
-  individual critters and groups.
+- SFML for the game window and the Tower, Map and Critter observer views.
+  It's a simple C++ library for 2D drawing and mouse/keyboard input, which
+  is all the game needed.
 
 ## Compiling and running
 
@@ -125,15 +126,17 @@ It then runs the three observer demonstrations:
 - **Tower Observer:** opens an SFML window where each `Space` press changes
   the tower and automatically updates its graphical view.
 - **Map Observer:** opens an SFML window where each `Space` press modifies
-  the map and automatically updates its graphical view.
-- **Critter Observer:** prints changes to the console. The driver first
-  creates an individual critter, attaches an observer, damages and moves
-  the critter, and verifies that notifications stop after detaching.
-  It then creates a group, attaches an observer, adds and removes critters,
-  and spawns a critter to demonstrate group notifications.
+  the map and automatically updates its graphical view. A legend and a
+  short explanation are shown in the window.
+- **Critter Observer:** opens an SFML window for one critter. Each `Space`
+  press moves it, damages it, or detaches/re-attaches the view, and the
+  panel updates. An explanation and the list of steps are shown on the
+  right. After the window closes, a console demo creates a group, attaches
+  an observer, adds and removes critters, and spawns a critter to show the
+  group notifications.
 
 After the observer demonstrations, the driver opens the playable SFML game.
 
 Controls: `1`/`2`/`3` pick a tower, left-click grass to build, left-click a
 tower to upgrade, right-click to sell, `Space` for the next wave, `R` to
-restart after losing.
+restart after losing.

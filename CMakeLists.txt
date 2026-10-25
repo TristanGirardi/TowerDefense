@@ -40,6 +40,7 @@ add_executable(TowerDefenseDriver
     CritterObserver.cpp
     TowerObserver.cpp
     MapObserver.cpp
+    DemoText.cpp
 )
 
 # SFML 3 requires C++17; the library itself stays C++11.

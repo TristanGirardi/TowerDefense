@@ -10,7 +10,8 @@
  * @brief The view of the map (Part 2).
  *
  * It is attached to a Map. Every time the map calls notify(), update()
- * prints the map in the console, and draw() shows it in an SFML window.
+ * saves a copy of the map and prints it in the console. draw() shows that
+ * copy in an SFML window, with a legend under it.
  */
 class MapObserver : public Observer
 {
@@ -25,10 +26,13 @@ public:
     void update() override;
 
     /**
-     * @brief Draws the map, one square per tile, with the towers on top.
+     * @brief Draws the map (one square per tile, towers on top) and a legend.
      * @param window Where to draw.
+     * @param font Font for the legend, or nullptr to draw only the map.
+     * @param position Top-left corner of the view, in pixels.
      */
-    void draw(sf::RenderWindow &window) const;
+    void draw(sf::RenderWindow &window, const sf::Font *font,
+              sf::Vector2f position) const;
 
     /** @brief How many times the map has notified this view. */
     int getUpdateCount() const;

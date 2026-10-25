@@ -1,12 +1,21 @@
 #include "MapObserver.h"
 
+#include "DemoText.h"
+
 #include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
 
 // Size of one tile in the window, in pixels.
-const float tileSize = 60.0f;
+const float tileSize = 50.0f;
+
+// Same colours as the game window.
+const sf::Color grassColor(92, 150, 74);
+const sf::Color pathColor(210, 185, 130);
+const sf::Color entryColor(70, 170, 220);
+const sf::Color exitColor(210, 70, 70);
+const sf::Color towerColor(60, 110, 220);
 
 MapObserver::MapObserver(const Map &map)
     : map(map), lastSeen(map), updateCount(0)
@@ -28,50 +37,74 @@ int MapObserver::getUpdateCount() const
 }
 
 // Draws the copy from the last update(), so a detached view stops changing.
-void MapObserver::draw(sf::RenderWindow &window) const
+void MapObserver::draw(sf::RenderWindow &window, const sf::Font *font,
+                       sf::Vector2f position) const
 {
     for (int y = 0; y < lastSeen.getHeight(); ++y)
     {
         for (int x = 0; x < lastSeen.getWidth(); ++x)
         {
-            // Same colours as the game window.
             sf::RectangleShape tile({tileSize, tileSize});
-            tile.setPosition({x * tileSize, y * tileSize});
+            tile.setPosition({position.x + x * tileSize, position.y + y * tileSize});
             tile.setOutlineThickness(-1.0f);
             tile.setOutlineColor(sf::Color(0, 0, 0, 40));
 
             TileType type = lastSeen.getTile(x, y);
             if (type == TileType::SCENERY)
             {
-                tile.setFillColor(sf::Color(92, 150, 74)); // grass
+                tile.setFillColor(grassColor);
             }
             else if (type == TileType::PATH)
             {
-                tile.setFillColor(sf::Color(210, 185, 130)); // sand
+                tile.setFillColor(pathColor);
             }
             else if (type == TileType::ENTRY)
             {
-                tile.setFillColor(sf::Color(70, 170, 220)); // blue
+                tile.setFillColor(entryColor);
             }
             else
             {
-                tile.setFillColor(sf::Color(210, 70, 70)); // red exit
+                tile.setFillColor(exitColor);
             }
             window.draw(tile);
 
             // A tower is a blue diamond in the middle of its tile.
             if (lastSeen.hasTower(x, y))
             {
-                sf::CircleShape tower(20.0f, 4);
-                tower.setOrigin({20.0f, 20.0f});
-                tower.setPosition({(x + 0.5f) * tileSize, (y + 0.5f) * tileSize});
-                tower.setFillColor(sf::Color(60, 110, 220));
+                sf::CircleShape tower(16.0f, 4);
+                tower.setOrigin({16.0f, 16.0f});
+                tower.setPosition({position.x + (x + 0.5f) * tileSize,
+                                   position.y + (y + 0.5f) * tileSize});
+                tower.setFillColor(towerColor);
                 tower.setOutlineColor(sf::Color(20, 20, 30));
                 tower.setOutlineThickness(2.0f);
                 window.draw(tower);
             }
         }
     }
+
+    if (font == nullptr)
+    {
+        return;
+    }
+
+    // Legend under the map: a coloured square, then its name.
+    float legendY = position.y + lastSeen.getHeight() * tileSize + 12.0f;
+    const sf::Color colors[] = {grassColor, pathColor, entryColor, exitColor, towerColor};
+    const std::string names[] = {"Grass", "Path", "Entry", "Exit", "Tower"};
+    for (int i = 0; i < 5; ++i)
+    {
+        float legendX = position.x + i * 80.0f;
+        sf::RectangleShape square({14.0f, 14.0f});
+        square.setPosition({legendX, legendY + 2.0f});
+        square.setFillColor(colors[i]);
+        window.draw(square);
+        drawDemoText(window, *font, names[i], legendX + 20.0f, legendY, 14,
+                     sf::Color(200, 200, 210));
+    }
+
+    drawDemoText(window, *font, "Updates received: " + std::to_string(updateCount),
+                 position.x, legendY + 26.0f, 14, sf::Color(255, 230, 90));
 }
 
 // What each press of Space does, in order.
@@ -81,7 +114,7 @@ const std::vector<std::string> mapSteps = {
     "Place a second tower at (6, 1)",
     "Try to move a tower onto the path",
     "Remove the tower at (6, 1)",
-    "Make tile (1, 0) scenery again (path is cut)",
+    "Turn tile (1, 0) into grass (cuts the path)",
     "Detach the view, then move the tower",
 };
 
@@ -152,9 +185,11 @@ void runMapObserverDemo()
     std::cout << "Driver: made an 8x5 map and attached a MapObserver." << std::endl;
     std::cout << "Press Space in the window to do the next step." << std::endl;
 
-    sf::RenderWindow window(sf::VideoMode({480, 300}), "Part 2: Map observer",
+    sf::RenderWindow window(sf::VideoMode({860, 360}), "Part 2: Map observer",
                             sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(60);
+    sf::Font font;
+    const sf::Font *fontPtr = loadDemoFont(font) ? &font : nullptr;
     std::size_t nextStep = 0;
 
     while (window.isOpen())
@@ -186,18 +221,45 @@ void runMapObserverDemo()
             }
         }
 
-        // The title tells you what the next Space press will do.
-        if (nextStep < mapSteps.size())
+        window.clear(sf::Color(20, 20, 24));
+        view.draw(window, fontPtr, {20.0f, 20.0f});
+
+        // The text on the right is the driver's own, not part of the view.
+        if (fontPtr != nullptr)
         {
-            window.setTitle("Part 2: Map observer - Space: " + mapSteps[nextStep]);
+            float x = 450.0f;
+            drawDemoText(window, font, "The map is the Observable. The picture on the",
+                         x, 20.0f, 14, sf::Color(170, 170, 185));
+            drawDemoText(window, font, "left is a MapObserver attached to it. Each step",
+                         x, 38.0f, 14, sf::Color(170, 170, 185));
+            drawDemoText(window, font, "changes the map, the map calls notify(), and",
+                         x, 56.0f, 14, sf::Color(170, 170, 185));
+            drawDemoText(window, font, "the view redraws (the console prints it too).",
+                         x, 74.0f, 14, sf::Color(170, 170, 185));
+
+            drawDemoText(window, font,
+                         nextStep < mapSteps.size() ? "Press Space to:" : "Done. Press Space to close.",
+                         x, 108.0f, 16, sf::Color::White);
+            for (std::size_t i = 0; i < mapSteps.size(); ++i)
+            {
+                sf::Color color = sf::Color(200, 200, 210); // still to do
+                if (i < nextStep)
+                {
+                    color = sf::Color(110, 110, 120); // already done
+                }
+                else if (i == nextStep)
+                {
+                    color = sf::Color(255, 230, 90); // next one
+                }
+                drawDemoText(window, font, std::to_string(i + 1) + ". " + mapSteps[i],
+                             x, 138.0f + i * 22.0f, 14, color);
+            }
         }
         else
         {
-            window.setTitle("Part 2: Map observer - done, press Space to close");
+            window.setTitle("Part 2: Map observer - press Space (step " +
+                            std::to_string(nextStep + 1) + ")");
         }
-
-        window.clear(sf::Color(20, 20, 24));
-        view.draw(window);
         window.display();
     }
 
