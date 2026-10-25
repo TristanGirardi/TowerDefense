@@ -9,22 +9,22 @@
 
 namespace
 {
-// Right, left, down, up. Critters can't move diagonally.
-const Position directions[] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    // Right, left, down, up. Critters can't move diagonally.
+    const Position directions[] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
-// Critters can stand on anything except scenery, and obviously not off the map.
-bool canEnter(const Map &map, const Position &position)
-{
-    if (position.x < 0 || position.x >= map.getWidth() ||
-        position.y < 0 || position.y >= map.getHeight())
+    // Critters can stand on anything except scenery, and obviously not off the map.
+    bool canEnter(const Map &map, const Position &position)
     {
-        return false;
-    }
+        if (position.x < 0 || position.x >= map.getWidth() ||
+            position.y < 0 || position.y >= map.getHeight())
+        {
+            return false;
+        }
 
-    const TileType tile = map.getTile(position.x, position.y);
-    return tile == TileType::PATH || tile == TileType::ENTRY ||
-           tile == TileType::EXIT;
-}
+        const TileType tile = map.getTile(position.x, position.y);
+        return tile == TileType::PATH || tile == TileType::ENTRY ||
+               tile == TileType::EXIT;
+    }
 }
 
 Critter::Critter(int reward, int hitPoints, int strength, double speed, int level)
@@ -100,9 +100,12 @@ void Critter::takeDamage(int damage)
         throw std::invalid_argument("Damage cannot be negative.");
     }
 
-    if (isAlive())
+    if (isAlive() && damage > 0)
     {
         hitPoints = std::max(0, hitPoints - damage);
+
+        // Notify observers that the critter's HP changed.
+        notify();
     }
 }
 
@@ -201,11 +204,16 @@ void Critter::move(const Map &map, double elapsedSeconds)
         {
             break; // stuck, or already at the exit
         }
+
         position = next;
+
         if (position.x == map.getExitX() && position.y == map.getExitY())
         {
             exitReached = true;
         }
+
+        // Notify observers whenever the critter moves.
+        notify();
     }
 }
 

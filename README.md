@@ -1,4 +1,4 @@
-We certify that this submission is the original work of members of the group and meets the Faculty's Expectations of Originality
+We certify that this submission is the original work of members of the group and meets the Faculty's Expectations of Originality.
 
 # TowerDefense
 
@@ -51,9 +51,12 @@ Sources:
   targeting and reloading. Each subclass (`DirectTower`, `SplashTower`,
   `HunterTower`) gives its own level table and overrides `applyEffect()`,
   which is what the shot does.
-- `Critter`: its stats and position. Each move it runs a BFS to find the
-  next step toward the exit.
+- `Critter`: stores its stats and position. Each move runs a BFS to find the
+  next step toward the exit. It also inherits from `Observable` and notifies
+  its observers whenever its health or position changes.
 - `CritterGroup`: one wave. Critters enter the map one after the other.
+  The group also inherits from `Observable` and notifies observers when
+  critters are added, removed or spawned.
 - `CritterGroupGenerator`: makes the wave for a given level, with more
   critters and stronger stats each time.
 
@@ -63,7 +66,7 @@ report what happened (a kill's reward, the coins a critter stole), and the
 classes work in both the console tests and the game window. The code
 comments go into more detail.
 
-### Observer pattern 
+### Observer pattern
 
 - `Observable` / `Observer`: `attach`, `detach`, and `notify()` when something
   changes (same idea as in the course notes).
@@ -74,17 +77,28 @@ comments go into more detail.
   of the map from its last `update()`, prints it in the console, and draws
   it in an SFML window (T = tower in the console view). Refused moves (onto
   the path, off the map) don't notify.
+- `Critter` (part 3): inherits from `Observable` and calls `notify()` when
+  it takes damage or moves to another cell. This allows an observer to
+  automatically receive updates when an individual critter changes.
 - `CritterGroup` (part 3): notifies on `addCritter`, `removeCritter`, and
-  `spawnNext`. `CritterObserver` prints the wave in `update()`. The driver runs
-  a short console demo, then opens the SFML game. We use `CritterGroup` as the
-  observable because add and remove apply to the wave;
+  `spawnNext`. We kept the group observable because adding and removing
+  critters affects the entire wave.
+- `CritterObserver` (part 3): can observe either an individual `Critter`
+  or a `CritterGroup`. Its `update()` method prints the current stats,
+  including health, position and level. It also counts the number of
+  updates received so the driver can verify that notifications occur.
+  The driver demonstrates individual critter movement and damage,
+  group additions and removals, and observer attachment and detachment.
 
 ## Tools
 
 - CMake, because CLion uses it and it downloads SFML on its own, so you
   don't need to install anything extra to build the project.
-- SFML for the game window. It's a simple C++ library for 2D drawing and
-  mouse/keyboard input, which is all the game needed.
+- SFML for the game window and the Tower and Map observer views. It's a
+  simple C++ library for 2D drawing and mouse/keyboard input, which is
+  all the game needed.
+- The Critter Observer uses console output to display changes to
+  individual critters and groups.
 
 ## Compiling and running
 
@@ -95,7 +109,7 @@ In CLion: open the folder and run the `TowerDefenseDriver` target.
 
 From a terminal:
 
-```
+```bash
 cmake -S . -B build
 cmake --build build
 ```
@@ -104,10 +118,21 @@ Then run `build/TowerDefenseDriver` (or `build\Debug\TowerDefenseDriver.exe`
 with Visual Studio).
 
 The driver runs the Map, Tower and Critter tests (and the observer tests)
-first and prints `[PASS]` or `[FAIL]` for each one. Then it runs the three
-observer demos: the Tower and Map demos open a small window where each
-`Space` press changes the object once and the view updates; the Critter
-demo prints to the console. Then it opens the game.
+first and prints `[PASS]` or `[FAIL]` for each one.
+
+It then runs the three observer demonstrations:
+
+- **Tower Observer:** opens an SFML window where each `Space` press changes
+  the tower and automatically updates its graphical view.
+- **Map Observer:** opens an SFML window where each `Space` press modifies
+  the map and automatically updates its graphical view.
+- **Critter Observer:** prints changes to the console. The driver first
+  creates an individual critter, attaches an observer, damages and moves
+  the critter, and verifies that notifications stop after detaching.
+  It then creates a group, attaches an observer, adds and removes critters,
+  and spawns a critter to demonstrate group notifications.
+
+After the observer demonstrations, the driver opens the playable SFML game.
 
 Controls: `1`/`2`/`3` pick a tower, left-click grass to build, left-click a
 tower to upgrade, right-click to sell, `Space` for the next wave, `R` to

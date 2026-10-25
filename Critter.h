@@ -1,7 +1,9 @@
+
 #ifndef CRITTER_H
 #define CRITTER_H
 
 #include "Map.h"
+#include "Observable.h" // Observer pattern support
 
 // A cell on the map. Critters are always on exactly one cell.
 struct Position
@@ -28,7 +30,7 @@ struct Position
 //   level     - the wave it came from
 // It has no fixed route: each move it finds the shortest way to the exit
 // and takes one step.
-class Critter
+class Critter : public Observable // Critter is now Observable
 {
 private:
     int reward;
@@ -66,11 +68,11 @@ public:
 
     void takeDamage(int damage);
 
-    void move(const Map &map); // one turn
+    void move(const Map &map);                        // one turn
     void move(const Map &map, double elapsedSeconds); // used by the GUI
 
     // These two pay out only once, so nothing gets counted twice.
-    int claimReward(); // the reward, once it's dead
+    int claimReward();            // the reward, once it's dead
     int claimCoinsStolenAtExit(); // its strength, once it's escaped
 };
 

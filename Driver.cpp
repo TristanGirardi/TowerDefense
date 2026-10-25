@@ -20,23 +20,23 @@
 
 namespace
 {
-int passedChecks = 0;
-int failedChecks = 0;
+    int passedChecks = 0;
+    int failedChecks = 0;
 
-// Records one test result and prints it on its own line.
-void check(bool condition, const std::string &description)
-{
-    if (condition)
+    // Records one test result and prints it on its own line.
+    void check(bool condition, const std::string &description)
     {
-        ++passedChecks;
-        std::cout << "  [PASS] " << description << std::endl;
+        if (condition)
+        {
+            ++passedChecks;
+            std::cout << "  [PASS] " << description << std::endl;
+        }
+        else
+        {
+            ++failedChecks;
+            std::cout << "  [FAIL] " << description << std::endl;
+        }
     }
-    else
-    {
-        ++failedChecks;
-        std::cout << "  [FAIL] " << description << std::endl;
-    }
-}
 }
 
 void testMap()
@@ -135,28 +135,28 @@ void testMap()
 
 namespace
 {
-void printTower(const Tower &tower)
-{
-    const TowerStats &stats = tower.getStats();
-    std::cout << tower.getName() << " at (" << tower.getX() << ", "
-              << tower.getY() << ") level " << tower.getLevel() << "/"
-              << tower.getMaxLevel() << ": range " << stats.range
-              << ", power " << stats.power << ", fire rate "
-              << stats.fireRate << "/s, refund " << tower.getRefundValue()
-              << std::endl;
-}
-
-void printCritters(const std::vector<Critter *> &critters)
-{
-    for (std::size_t i = 0; i < critters.size(); ++i)
+    void printTower(const Tower &tower)
     {
-        const Critter *c = critters[i];
-        std::cout << "  Critter " << i << " at (" << c->getPosition().x << ", "
-                  << c->getPosition().y << ") level " << c->getLevel()
-                  << " HP " << c->getHitPoints()
-                  << (c->isAlive() ? "" : " (dead)") << std::endl;
+        const TowerStats &stats = tower.getStats();
+        std::cout << tower.getName() << " at (" << tower.getX() << ", "
+                  << tower.getY() << ") level " << tower.getLevel() << "/"
+                  << tower.getMaxLevel() << ": range " << stats.range
+                  << ", power " << stats.power << ", fire rate "
+                  << stats.fireRate << "/s, refund " << tower.getRefundValue()
+                  << std::endl;
     }
-}
+
+    void printCritters(const std::vector<Critter *> &critters)
+    {
+        for (std::size_t i = 0; i < critters.size(); ++i)
+        {
+            const Critter *c = critters[i];
+            std::cout << "  Critter " << i << " at (" << c->getPosition().x << ", "
+                      << c->getPosition().y << ") level " << c->getLevel()
+                      << " HP " << c->getHitPoints()
+                      << (c->isAlive() ? "" : " (dead)") << std::endl;
+        }
+    }
 }
 
 void testTower()
@@ -268,13 +268,10 @@ void testTower()
     std::cout << std::endl;
 }
 
-
-
 void testTowerObserver()
 {
     std::cout << "========== Tower observer tests ==========" << std::endl;
 
-    
     class CountingObserver : public Observer
     {
     public:
@@ -402,31 +399,31 @@ void testMapObserver()
 
 namespace
 {
-void printCritter(std::size_t index, const Critter &critter)
-{
-    std::cout << "  Critter " << index << ": pos (" << critter.getPosition().x
-              << ", " << critter.getPosition().y << ") HP "
-              << critter.getHitPoints() << " str " << critter.getStrength()
-              << " speed " << critter.getSpeed() << " reward "
-              << critter.getReward() << " level " << critter.getLevel();
-    if (critter.hasReachedExit())
+    void printCritter(std::size_t index, const Critter &critter)
     {
-        std::cout << " [reached exit]";
+        std::cout << "  Critter " << index << ": pos (" << critter.getPosition().x
+                  << ", " << critter.getPosition().y << ") HP "
+                  << critter.getHitPoints() << " str " << critter.getStrength()
+                  << " speed " << critter.getSpeed() << " reward "
+                  << critter.getReward() << " level " << critter.getLevel();
+        if (critter.hasReachedExit())
+        {
+            std::cout << " [reached exit]";
+        }
+        else if (!critter.isAlive())
+        {
+            std::cout << " [killed]";
+        }
+        std::cout << std::endl;
     }
-    else if (!critter.isAlive())
-    {
-        std::cout << " [killed]";
-    }
-    std::cout << std::endl;
-}
 
-void printSpawned(const CritterGroup &wave)
-{
-    for (std::size_t i = 0; i < wave.getNextCritterIndex(); ++i)
+    void printSpawned(const CritterGroup &wave)
     {
-        printCritter(i, wave.getCritters()[i]);
+        for (std::size_t i = 0; i < wave.getNextCritterIndex(); ++i)
+        {
+            printCritter(i, wave.getCritters()[i]);
+        }
     }
-}
 }
 
 void testCritter()
@@ -553,14 +550,13 @@ void testCritter()
 // Checks that notify() reaches an attached observer when the wave changes.
 void testCritterObserver()
 {
-    std::cout << "========== Critter observer tests ==========" << std::endl;
+    std::cout << "========== Critter observer tests =========="
+              << std::endl;
 
     class CountingObserver : public Observer
     {
     public:
-        int count;
-
-        CountingObserver() : count(0) {}
+        int count = 0;
 
         void update() override
         {
@@ -574,22 +570,74 @@ void testCritterObserver()
     map.setTile(2, 0, TileType::PATH);
     map.setTile(3, 0, TileType::EXIT);
 
+    // PART A: Individual Critter Observer
+    std::cout << "\nIndividual Critter tests:" << std::endl;
+
+    Critter individual(4, 20, 2, 1.0, 1);
+    CountingObserver individualCounter;
+
+    individual.attach(&individualCounter);
+
+    individual.takeDamage(5);
+    check(individualCounter.count == 1 &&
+              individual.getHitPoints() == 15,
+          "taking damage notifies the individual critter observer");
+
+    individual.move(map);
+    check(individualCounter.count == 2 &&
+              individual.getPosition() == Position{1, 0},
+          "moving a critter notifies its observer");
+
+    individual.takeDamage(0);
+    check(individualCounter.count == 2,
+          "zero damage does not notify the observer");
+
+    individual.takeDamage(5);
+    check(individualCounter.count == 3 &&
+              individual.getHitPoints() == 10,
+          "multiple health changes trigger observer updates");
+
+    CountingObserver secondCounter;
+    individual.attach(&secondCounter);
+
+    individual.move(map);
+    check(individualCounter.count == 4 &&
+              secondCounter.count == 1,
+          "all attached observers receive notifications");
+
+    individual.detach(&individualCounter);
+
+    individual.takeDamage(2);
+    check(individualCounter.count == 4 &&
+              secondCounter.count == 2,
+          "a detached observer no longer receives updates");
+
+    individual.detach(&secondCounter);
+
+    // PART B: CritterGroup Observer
+    std::cout << "\nCritterGroup tests:" << std::endl;
+
     CritterGroup group;
-    CountingObserver counter;
-    group.attach(&counter);
+    CountingObserver groupCounter;
+
+    group.attach(&groupCounter);
 
     Critter sample(4, 20, 2, 1.0, 1);
+
     group.addCritter(sample);
-    check(counter.count == 1, "adding a critter notifies the observer once");
+    check(groupCounter.count == 1,
+          "adding a critter notifies the group observer");
 
     group.spawnNext(map);
-    check(counter.count == 2, "spawnNext notifies the observer");
+    check(groupCounter.count == 2,
+          "spawning a critter notifies the group observer");
 
     group.removeCritter(0);
-    check(counter.count == 3 && group.empty(),
-          "removeCritter notifies the observer and clears the wave");
+    check(groupCounter.count == 3 && group.empty(),
+          "removing a critter notifies the group observer");
 
-    group.detach(&counter);
+    group.detach(&groupCounter);
+
     std::cout << std::endl;
 }
 
