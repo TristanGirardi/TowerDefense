@@ -68,7 +68,12 @@ comments go into more detail.
 - `Observable` / `Observer`: `attach`, `detach`, and `notify()` when something
   changes (same idea as in the course notes).
 - `Tower` (part 1): notifies on move, upgrade, and after firing.
-- `Map` (part 2): to be wired by the map observer teammate.
+- `Map` (part 2): notifies on `setTile`, `placeTower`, `moveTower` and
+  `removeTower`. The map now remembers which scenery cells have a tower, so
+  "moving the tower on the map" is a map change. `MapObserver` keeps a copy
+  of the map from its last `update()`, prints it in the console, and draws
+  it in an SFML window (T = tower in the console view). Refused moves (onto
+  the path, off the map) don't notify.
 - `CritterGroup` (part 3): notifies on `addCritter`, `removeCritter`, and
   `spawnNext`. `CritterObserver` prints the wave in `update()`. The driver runs
   a short console demo, then opens the SFML game. We use `CritterGroup` as the
@@ -98,8 +103,11 @@ cmake --build build
 Then run `build/TowerDefenseDriver` (or `build\Debug\TowerDefenseDriver.exe`
 with Visual Studio).
 
-The driver runs the Map, Tower and Critter tests first and prints `[PASS]`
-or `[FAIL]` for each one, then opens the game.
+The driver runs the Map, Tower and Critter tests (and the observer tests)
+first and prints `[PASS]` or `[FAIL]` for each one. Then it runs the three
+observer demos: the Tower and Map demos open a small window where each
+`Space` press changes the object once and the view updates; the Critter
+demo prints to the console. Then it opens the game.
 
 Controls: `1`/`2`/`3` pick a tower, left-click grass to build, left-click a
 tower to upgrade, right-click to sell, `Space` for the next wave, `R` to

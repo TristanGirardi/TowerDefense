@@ -1,6 +1,6 @@
-// Test driver. It first runs console tests for the Map (Part 1),
-// Tower (Part 2) and Critter group generator (Part 3) classes, prints whether
-// each check passed, and then opens the graphical game.
+// Test driver. It first runs console tests for the Map, Tower and Critter
+// classes and their observers, prints whether each check passed, then runs the
+// three observer demos (Tower, Map, Critter) and opens the graphical game.
 
 #include "Critter.h"
 #include "CritterGroup.h"
@@ -8,6 +8,7 @@
 #include "CritterObserver.h"
 #include "Gui.h"
 #include "Map.h"
+#include "MapObserver.h"
 #include "Observer.h"
 #include "Tower.h"
 #include "TowerObserver.h"
@@ -338,6 +339,67 @@ void testTowerObserver()
     std::cout << std::endl;
 }
 
+void testMapObserver()
+{
+    std::cout << "========== Map observer tests ==========" << std::endl;
+
+    class CountingObserver : public Observer
+    {
+    public:
+        int count;
+
+        CountingObserver() : count(0) {}
+
+        void update() override
+        {
+            ++count;
+        }
+    };
+
+    Map map(4, 3);
+    map.setTile(0, 0, TileType::ENTRY);
+    map.setTile(1, 0, TileType::PATH);
+    map.setTile(2, 0, TileType::PATH);
+    map.setTile(3, 0, TileType::EXIT);
+
+    CountingObserver counter;
+    map.attach(&counter);
+
+    map.setTile(3, 1, TileType::PATH);
+    check(counter.count == 1, "setTile notifies the observer once");
+
+    check(map.placeTower(0, 2) && map.hasTower(0, 2) && counter.count == 2,
+          "placeTower puts a tower on scenery and notifies the observer");
+
+    check(map.moveTower(0, 2, 1, 2) && !map.hasTower(0, 2) &&
+              map.hasTower(1, 2) && counter.count == 3,
+          "moveTower moves the tower and notifies the observer once");
+
+    check(!map.moveTower(1, 2, 1, 0) && counter.count == 3,
+          "moving a tower onto the path is refused and does not notify");
+
+    check(!map.placeTower(2, 0) && counter.count == 3,
+          "placing a tower on the path is refused and does not notify");
+
+    check(!map.placeTower(9, 9) && counter.count == 3,
+          "placing a tower outside the map is refused and does not notify");
+
+    check(map.removeTower(1, 2) && !map.hasTower(1, 2) && counter.count == 4,
+          "removeTower takes the tower off and notifies the observer");
+
+    map.detach(&counter);
+    map.placeTower(2, 2);
+    check(counter.count == 4, "a detached observer is not notified anymore");
+
+    MapObserver view(map);
+    map.attach(&view);
+    map.moveTower(2, 2, 3, 2);
+    check(view.getUpdateCount() == 1, "MapObserver receives the map's notify");
+
+    map.detach(&view);
+    std::cout << std::endl;
+}
+
 namespace
 {
 void printCritter(std::size_t index, const Critter &critter)
@@ -542,6 +604,7 @@ int main()
     testMap();
     testTower();
     testTowerObserver();
+    testMapObserver();
     testCritter();
     testCritterObserver();
 
@@ -553,6 +616,7 @@ int main()
               << std::endl;
 
     runTowerObserverDemo();
+    runMapObserverDemo();
     runCritterObserverDemo();
 
     std::cout << "========== Starting the GUI ==========" << std::endl;

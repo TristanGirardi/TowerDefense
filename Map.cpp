@@ -13,6 +13,7 @@ Map::Map(int width, int height) : width(width), height(height)
     }
     // Start with an empty field of grass; the path gets drawn on afterwards.
     map.resize(height, std::vector<TileType>(width, TileType::SCENERY));
+    towers.resize(height, std::vector<bool>(width, false));
 }
 
 void Map::setTile(int x, int y, TileType type)
@@ -20,6 +21,11 @@ void Map::setTile(int x, int y, TileType type)
     if (x >= 0 && x < width && y >= 0 && y < height)
     {
         map[y][x] = type;
+        if (type != TileType::SCENERY)
+        {
+            towers[y][x] = false; // a tower can't stay on the path
+        }
+        notify(); // the map changed, tell the observers
     }
     else
     {
@@ -114,11 +120,16 @@ int Map::getExitY() const
 
 void Map::display() const
 {
-    for (const std::vector<TileType> &row : map)
+    for (int y = 0; y < height; ++y)
     {
-        for (TileType tile : row)
+        for (int x = 0; x < width; ++x)
         {
-            switch (tile)
+            if (towers[y][x])
+            {
+                std::cout << "T ";
+                continue;
+            }
+            switch (map[y][x])
             {
             case TileType::SCENERY:
                 std::cout << "S ";
@@ -136,6 +147,63 @@ void Map::display() const
         }
         std::cout << std::endl;
     }
+}
+
+bool Map::hasTower(int x, int y) const
+{
+    if (x < 0 || x >= width || y < 0 || y >= height)
+    {
+        return false;
+    }
+    return towers[y][x];
+}
+
+bool Map::placeTower(int x, int y)
+{
+    // Only on scenery that is inside the map and still empty.
+    if (x < 0 || x >= width || y < 0 || y >= height)
+    {
+        return false;
+    }
+    if (map[y][x] != TileType::SCENERY || towers[y][x])
+    {
+        return false;
+    }
+    towers[y][x] = true;
+    notify();
+    return true;
+}
+
+bool Map::removeTower(int x, int y)
+{
+    if (!hasTower(x, y))
+    {
+        return false;
+    }
+    towers[y][x] = false;
+    notify();
+    return true;
+}
+
+bool Map::moveTower(int fromX, int fromY, int toX, int toY)
+{
+    if (!hasTower(fromX, fromY))
+    {
+        return false; // no tower to move
+    }
+    if (toX < 0 || toX >= width || toY < 0 || toY >= height)
+    {
+        return false; // off the map
+    }
+    if (map[toY][toX] != TileType::SCENERY || towers[toY][toX])
+    {
+        return false; // can't go there
+    }
+    // Change both cells first, then notify once for the whole move.
+    towers[fromY][fromX] = false;
+    towers[toY][toX] = true;
+    notify();
+    return true;
 }
 
 // First check there's exactly one entry and one exit, then do a DFS from the
@@ -210,4 +278,4 @@ bool Map::validate() const
     }
 
     return true;
-}
+}
